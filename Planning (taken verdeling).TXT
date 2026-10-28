@@ -1,0 +1,18 @@
+Persoon 1:
+Kenuja: Firebase Auth, rollen room, permissies, UX, Firestore, Git
+{
+A1, A2, A3, (A4), K1, K2, K7, K8, K9, K10, (K11), K12, H1, H2, 
+}
+
+Persoon 2:
+Imane: Firestore, OSMDROID Kaart , Reverse geocoding, Base64
+{
+K3, K4, K5, (K6) , (K11), H3, H4, H5, (H6),(H7),
+}
+
+Alles tussenn () is een should, we gaan dit opzich samen aan doen en later herverdelen.
+
+De algemene doelen
+G1, G2, G3, G4 doen we samen
+persoon 1 bevat meer taken, persoon 2 bevat meer compelxe taken
+wij gaan elkaar wel helpen als het nodig is, en deze planning kan nog veranderen
