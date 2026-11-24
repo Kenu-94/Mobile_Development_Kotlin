@@ -3,8 +3,10 @@ package be.reststop.data
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.GeoPoint
+//models aanmaken
+//alle omzetting van onze modellen voor room/firestore
 
-/** Firestore: stores/{storeId}. Het document-id is de uid van de handelaar. */
+//Firestore: stores/{storeId}. Het document-id is de uid van de handelaar.
 data class Store(
     val ownerId: String = "",
     val name: String = "",
@@ -15,7 +17,8 @@ data class Store(
     val city: String = ""
 )
 
-/** Firestore: bags/{bagId}. storeName, category en location zijn bewust gekopieerd. */
+// Firestore: bags/{bagId}. storeName, category en location zijn bewust gekopieerd.
+//dit is wat je kan bestellen
 data class Bag(
     @DocumentId val id: String = "",
     val storeId: String = "",
@@ -34,7 +37,7 @@ data class Bag(
     val photoBase64: String = ""
 )
 
-/** Firestore: reservations/{id}. Titel/winkel/venster zijn gekopieerd voor het offline overzicht. */
+// Firestore: reservations/{id}. Titel/winkel/venster zijn gekopieerd voor het offline overzicht.
 data class Reservation(
     @DocumentId val id: String = "",
     val bagId: String = "",
@@ -49,6 +52,7 @@ data class Reservation(
     val pickupStart: Timestamp = Timestamp.now(),
     val pickupEnd: Timestamp = Timestamp.now()
 )
+//omzetten om ze te kunnen opslana in firestore of room, ze worden een map
 
 fun Store.toMap(): Map<String, Any> = mapOf(
     "ownerId" to ownerId, "name" to name, "category" to category, "location" to location,
@@ -62,6 +66,7 @@ fun Bag.toMap(): Map<String, Any> = mapOf(
     "pickupEnd" to pickupEnd, "location" to location, "active" to active, "photoBase64" to photoBase64
 )
 
+//reservatie omzetten naar cached want zo een reservatie van firestore opgeslagen wordne bij room db, zodat het ook offline kan bekeken wordne die reservaties
 fun Reservation.toCached() = CachedReservation(
     id = id, bagTitle = bagTitle, storeName = storeName, pickupCode = pickupCode,
     pickupStart = pickupStart.toDate().time, pickupEnd = pickupEnd.toDate().time,

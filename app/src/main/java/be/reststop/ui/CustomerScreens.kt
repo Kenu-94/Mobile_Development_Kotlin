@@ -41,44 +41,74 @@ import be.reststop.R
 import be.reststop.data.CachedReservation
 import be.reststop.data.FavoriteStore
 import java.util.Locale
+// ui bestan voor de hele customer gedeelte en schermen
+//userinterface, navigatie, ontdekkingspagina, kaart, pakketgeg
+//bestellingen en favos
+//jetpack compose voor de schermen bouwen en connecten met de viewmodels waar de logica is gemaakt
 
+
+//data klass voor de verschillende tab van de klanten
+//elke tab is een andere route voor navigatie
+//een label verwijst naar een tekst rescource
+//de icon gaan we tonen
 private data class NavTab(val route: String, @StringRes val label: Int, val icon: ImageVector)
 
+//hiermee kan je van een scherm naar andere scherm gaan
+//door die popupto dat het stapel terug naar startscherm gaat
+//launchsingletop= voorkoomt dat dezelfde table meerdere keren komt in het stack
+//restorestate=een oude bewaarde state terug hersteld wordt wnr je terug gaat
 fun NavController.goTab(route: String) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true
     restoreState = true
 }
 
+//hoofdcomposable functie voor de klanten
+//bovenbalk, onderbalk, navigatie, gebruikersinterface van klanten is hier
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerApp(onLogout: () -> Unit) {
     val c = LocalContext.current.container
+    //appcontainer wordt opgehaald van de context, daar zitten de repositroty, db enz
     val uid = c.auth.currentUser?.uid.orEmpty()
+    //uid van ingelogd gebruiker wordt opgehaald
     // Per gebruiker een eigen ViewModel (sleutel = uid), zodat er na uitloggen geen oude data blijft hangen.
     val home: HomeViewModel = viewModel(key = "home-$uid", factory = vmFactory { HomeViewModel(c) })
+   //viewmodel gemaakt/opgrhaald, homeviewmodel om de pakketen te bekijekn en opzoeken dus homepage
     val orders: OrdersViewModel = viewModel(key = "orders-$uid", factory = vmFactory { OrdersViewModel(c) })
+    //ordersviewmodel om je bestelling te bekijken
+    //vmfactory zorgt dat ze worden aangemaakt met de appcontainer
+    //elke user heeft zijn eigne viewmodel, door de uid t egebruiken is elke viewmodel uniek
     val nav = rememberNavController()
+    //die navigatiecontroller van bovenana wordt anagemaakt
     val entry by nav.currentBackStackEntryAsState()
+    // we houdne bij welke scherm we nu zitten
     val route = entry?.destination?.route
+    //naar waar we gaan, dus route van de hudige scherm
     val tabs = listOf(
         NavTab("discover", R.string.tab_discover, Icons.Default.Home),
         NavTab("map", R.string.tab_map, Icons.Default.Place),
         NavTab("orders", R.string.tab_orders, Icons.Default.ShoppingCart),
         NavTab("favorites", R.string.tab_favorites, Icons.Default.Favorite)
-    )
+    )//de 4hoofd tab in de lijst, voor elke tab wordt een route aangeduid, tekst, en de icon ervoor
     val isTab = tabs.any { it.route == route }
+    //checken als de huidige scherm een van die tabs zijn, zodat we laten
+    //kunnen bepalen als we de onderbalk, uitlogknop^enz meoten tonen of niet
 
     Scaffold(
         topBar = {
             TopAppBar(
+                //bovenbalk wordt gemaakt, met de naam, tekst wordt va de stringrescource gepakt
                 title = { Text(stringResource(R.string.app_name)) },
                 navigationIcon = {
+                    //back knop getoont als de klant niet in die hoofd tab zit van die lijst
+                    //door die popbackstack kan de klant teurg gaan
                     if (!isTab && route != null) IconButton(onClick = { nav.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
+                    //uitlogknop getoont bij de hoofdtab
                     if (isTab) IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, stringResource(R.string.logout))
                     }
@@ -86,27 +116,40 @@ fun CustomerApp(onLogout: () -> Unit) {
             )
         },
         bottomBar = {
+            //onderbalk, alleen als de gebruiker bij de hoofd tab is
             if (isTab) NavigationBar {
                 tabs.forEach { t ->
                     NavigationBarItem(
                         selected = route == t.route, onClick = { nav.goTab(t.route) },
                         icon = { Icon(t.icon, null) }, label = { Text(stringResource(t.label)) }
                     )
-                }
+                }//elke tab van die erder lijst overlope,
+            // voor elek tab wordt er een navigatie item gemaakt met een icon
+                //huidige tab is geselecteerd , en als je op een andere tab klik
+                //wordt goTab uitgevoerd
             }
         }
     ) { pad ->
+        //de scaffold wordt ni ingevuld, nahost beheert wat op het shcemr getootn wordt
+        //app begint met het scherm discover (pakketen opzoeken enz)
         NavHost(nav, startDestination = "discover", modifier = Modifier.padding(pad)) {
             composable("discover") {
                 DiscoverScreen(home, onOpenBag = { nav.navigate("detail/$it") }, onPickMap = { nav.navigate("pick") })
-            }
-            composable("map") {
+            }//wnr je bij de route discover ben word tdit getoont,discoverscreen,
+            // homeviewmodel wordt gebruikt zodat de shcerm de gegevns bevat
+            //als een pakket geklitk wordt, gaat de app anvigeren naar de detail scherm van dat pakket
+            //via die onPickMap kan d eklant naar de scherm gaan bij de loactie die hij op de kaart kiest
+            composable("map") {//zelfde
                 MapScreen(home, onOpenBag = { nav.navigate("detail/$it") }, onPickMap = { nav.navigate("pick") })
             }
-            composable("orders") { OrdersScreen(orders) }
-            composable("favorites") { FavoritesScreen() }
+            composable("orders") { OrdersScreen(orders) }//toont order screen
+            composable("favorites") { FavoritesScreen() }//toont favo screen
             composable("detail/{bagId}") { DetailScreen(onGoToOrders = { nav.popBackStack(); nav.goTab("orders") }) }
+            //dit is die detailscreen van een pakket
             composable("pick") {
+                //de scherm wordt geopend bij de lcoatie die ze keist,
+                // huidige locatie is gegeven als beginpunt van de kaart
+                //als de klant een neiwe locatie kiest wordn deze coordinaten opgeslagne bij home.setLocation()
                 PickLocationScreen(initial = home.uiState.value.location) { lat, lon ->
                     home.setLocation(lat, lon)
                     nav.popBackStack()
@@ -116,7 +159,7 @@ fun CustomerApp(onLogout: () -> Unit) {
     }
 }
 
-// ---------------- Ontdekken ----------------
+///Ontdekken
 
 @Composable
 fun DiscoverScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: () -> Unit) {
