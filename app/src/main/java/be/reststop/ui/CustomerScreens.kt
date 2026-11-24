@@ -70,11 +70,11 @@ fun NavController.goTab(route: String) = navigate(route) {
 fun CustomerApp(onLogout: () -> Unit) {
     val c = LocalContext.current.container
     //appcontainer wordt opgehaald van de context, daar zitten de repositroty, db enz
-    val uid = c.auth.currentUser?.uid.orEmpty()
+    val uid = c.auth.currentUser?.uid ?:""
     //uid van ingelogd gebruiker wordt opgehaald
     // Per gebruiker een eigen ViewModel (sleutel = uid), zodat er na uitloggen geen oude data blijft hangen.
     val home: HomeViewModel = viewModel(key = "home-$uid", factory = vmFactory { HomeViewModel(c) })
-   //viewmodel gemaakt/opgrhaald, homeviewmodel om de pakketen te bekijekn en opzoeken dus homepage
+    //viewmodel gemaakt/opgrhaald, homeviewmodel om de pakketen te bekijekn en opzoeken dus homepage
     val orders: OrdersViewModel = viewModel(key = "orders-$uid", factory = vmFactory { OrdersViewModel(c) })
     //ordersviewmodel om je bestelling te bekijken
     //vmfactory zorgt dat ze worden aangemaakt met de appcontainer
@@ -91,7 +91,8 @@ fun CustomerApp(onLogout: () -> Unit) {
         NavTab("orders", R.string.tab_orders, Icons.Default.ShoppingCart),
         NavTab("favorites", R.string.tab_favorites, Icons.Default.Favorite)
     )//de 4hoofd tab in de lijst, voor elke tab wordt een route aangeduid, tekst, en de icon ervoor
-    val isTab = tabs.any { it.route == route }
+  //  val isTab = tabs.any { it.route == route }
+    val isTab=route in tabs.map {it.route}
     //checken als de huidige scherm een van die tabs zijn, zodat we laten
     //kunnen bepalen als we de onderbalk, uitlogknop^enz meoten tonen of niet
 
@@ -124,7 +125,7 @@ fun CustomerApp(onLogout: () -> Unit) {
                         icon = { Icon(t.icon, null) }, label = { Text(stringResource(t.label)) }
                     )
                 }//elke tab van die erder lijst overlope,
-            // voor elek tab wordt er een navigatie item gemaakt met een icon
+                // voor elek tab wordt er een navigatie item gemaakt met een icon
                 //huidige tab is geselecteerd , en als je op een andere tab klik
                 //wordt goTab uitgevoerd
             }
@@ -327,7 +328,7 @@ fun DetailScreen(onGoToOrders: () -> Unit) {
             }
             Text(stringResource(R.string.pickup_window, bag.pickupStart.hm(), bag.pickupEnd.hm()))
             Text(
-                if (soldOut) stringResource(R.string.sold_out) else stringResource(R.string.left_count, bag.quantityLeft),
+                if (soldOut) stringResource(NR.string.sold_out) else stringResource(R.string.left_count, bag.quantityLeft),
                 color = MaterialTheme.colorScheme.secondary
             )
             OsmMap(
