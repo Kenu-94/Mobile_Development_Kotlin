@@ -20,10 +20,10 @@ import androidx.core.content.ContextCompat
 import be.reststop.R
 import be.reststop.findActivity
 
-/**
- * Vraagt pas na uitleg en een actie van de gebruiker om de locatie (K1).
- * Gevallen: precies, benaderend, geweigerd, definitief geweigerd (knop naar instellingen).
- */
+
+ //Vraagt pas na uitleg en een actie van de gebruiker om de locatie (K1).
+ //Gevallen: precies, benaderend, geweigerd, definitief geweigerd (knop naar instellingen).
+
 @Composable
 fun LocationPrompt(state: HomeUiState, vm: HomeViewModel, onPickOnMap: () -> Unit) {
     val context = LocalContext.current

@@ -70,7 +70,7 @@ fun NavController.goTab(route: String) = navigate(route) {
 fun CustomerApp(onLogout: () -> Unit) {
     val c = LocalContext.current.container
     //appcontainer wordt opgehaald van de context, daar zitten de repositroty, db enz
-    val uid = c.auth.currentUser?.uid ?:""
+    val uid = c.auth.currentUser?.uid.orEmpty()
     //uid van ingelogd gebruiker wordt opgehaald
     // Per gebruiker een eigen ViewModel (sleutel = uid), zodat er na uitloggen geen oude data blijft hangen.
     val home: HomeViewModel = viewModel(key = "home-$uid", factory = vmFactory { HomeViewModel(c) })
@@ -91,8 +91,7 @@ fun CustomerApp(onLogout: () -> Unit) {
         NavTab("orders", R.string.tab_orders, Icons.Default.ShoppingCart),
         NavTab("favorites", R.string.tab_favorites, Icons.Default.Favorite)
     )//de 4hoofd tab in de lijst, voor elke tab wordt een route aangeduid, tekst, en de icon ervoor
-  //  val isTab = tabs.any { it.route == route }
-    val isTab=route in tabs.map {it.route}
+    val isTab = tabs.any { it.route == route }
     //checken als de huidige scherm een van die tabs zijn, zodat we laten
     //kunnen bepalen als we de onderbalk, uitlogknop^enz meoten tonen of niet
 
@@ -162,34 +161,51 @@ fun CustomerApp(onLogout: () -> Unit) {
 
 ///Ontdekken
 
+//pagina om pakketne t eontdekken, door klanten
+//heeft homeviewmodel maar 2 functies , pakket openene en naar locatie keuze gaan
+//is volledig in state, en bij elke aanpassing gaat de scherm zelf refreshen
 @Composable
 fun DiscoverScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: () -> Unit) {
     val s by vm.uiState.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize()) {
+        //alles wordt in ene kolom gedaan
         Text(
+            //bestaat het stad niet? locatie onbekend tekst
             s.city?.let { stringResource(R.string.near_city, it) } ?: stringResource(R.string.near_unknown),
             style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp)
         )
         LocationPrompt(s, vm, onPickMap)
+        //locatieprompt getoont,dit zegt tgeen de gebruiker wat zijn locatie is en kan die aanapssen op kaart
+
+      //afstand filters
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+           //filterchip, kan dan alle afstandne bekijken, als maxLm null is is dit geselecteerd
+            //wordt uitgeschakeld bij een klik
             FilterChip(s.maxKm == null, { vm.setMaxKm(null) }, { Text(stringResource(R.string.all_distances)) })
             listOf(1, 5, 10).forEach { km ->
+                //voor elke afstand is er een chip
                 FilterChip(s.maxKm == km, { vm.setMaxKm(km) }, { Text(stringResource(R.string.km_value, km)) })
             }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(s.category == null, { vm.setCategory(null) }, { Text(stringResource(R.string.all_categories)) })
             CATEGORIES.forEach { cat ->
+                //alle categorieen, wnr de gebruikt klikt gaat het ef
                 FilterChip(s.category == cat, { vm.setCategory(cat) }, { Text(stringResource(categoryRes(cat))) })
             }
         }
+        //bij fouten wordt er een foutmelding getoont, haalt van de string rescourc en een kleur
         s.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         when {
+            //controle als pakket nog geladen wordt of als locatie nog bepaalt wordt
+
             s.loading || s.locating -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             s.items.isEmpty() -> Text(stringResource(R.string.no_bags), modifier = Modifier.padding(16.dp))
             else -> LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(s.items, key = { it.bag.id }) { BagCard(it) { onOpenBag(it.bag.id) } }
             }
+            //gene pakketne beschikbaar?: melding tonen
+            //wel pakketn? :wordt getoont in een scrolbar elijst, via bagcard
         }
     }
 }
@@ -328,7 +344,7 @@ fun DetailScreen(onGoToOrders: () -> Unit) {
             }
             Text(stringResource(R.string.pickup_window, bag.pickupStart.hm(), bag.pickupEnd.hm()))
             Text(
-                if (soldOut) stringResource(NR.string.sold_out) else stringResource(R.string.left_count, bag.quantityLeft),
+                if (soldOut) stringResource(R.string.sold_out) else stringResource(R.string.left_count, bag.quantityLeft),
                 color = MaterialTheme.colorScheme.secondary
             )
             OsmMap(

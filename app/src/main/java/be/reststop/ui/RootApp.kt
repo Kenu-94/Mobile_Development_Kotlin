@@ -23,18 +23,23 @@ import be.reststop.vmFactory
 
 @Composable
 fun RootApp() {
+    //context
     val c = LocalContext.current.container
+    //huidige sessie
     val session: SessionViewModel = viewModel(factory = vmFactory { SessionViewModel(c) })
+   //state van de sessie
     val state by session.state.collectAsStateWithLifecycle()
     when (val s = state) {
         SessionState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         SessionState.LoggedOut -> LoginScreen(onLoggedIn = session::refresh)
         SessionState.Customer -> CustomerApp(onLogout = session::logout)
         SessionState.Merchant -> MerchantApp(onLogout = session::logout)
+        //doorverwijzing
         is SessionState.Error -> Column(
             Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            //errors
             Text(stringResource(s.message), textAlign = TextAlign.Center)
             Spacer(Modifier.height(16.dp))
             Button(onClick = session::refresh) { Text(stringResource(R.string.retry)) }
