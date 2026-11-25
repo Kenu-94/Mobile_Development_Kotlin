@@ -100,7 +100,7 @@ fun StoreScreen() {
         return
     }
     val pins = if (ui.lat != null && ui.lon != null) listOf(MapPin("store", ui.lat!!, ui.lon!!, ui.name)) else emptyList()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(ui.name, vm::onName, Modifier.fillMaxWidth(), singleLine = true, label = { Text(stringResource(R.string.store_name)) })
         Text(stringResource(R.string.category))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScrollCompat()) {

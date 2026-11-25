@@ -209,16 +209,21 @@ fun DiscoverScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: ()
         }
     }
 }
-
+//maakt een kaart voor elke pakket,die krijgt een bagitem dat bevat de pakket gegevens
+// en afstand
 @Composable
 private fun BagCard(item: BagItem, onClick: () -> Unit) {
     val bag = item.bag
+    //klik event
     Card(onClick = onClick, Modifier.fillMaxWidth()) {
+        //inhoud van d ekaart wordt als row gedaan, links pakketfoto
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Base64Image(bag.photoBase64, Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)), sample = 4)
+           //en rechtd wordt de gegevens van die pakket gedaan, oner elkaar, winkel naam, titel
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(bag.storeName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text(bag.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+              //prijs en og waarde wort ook getoont
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.price_eur, bag.price), fontWeight = FontWeight.Bold)
                     Text(
@@ -226,8 +231,10 @@ private fun BagCard(item: BagItem, onClick: () -> Unit) {
                         textDecoration = TextDecoration.LineThrough, color = MaterialTheme.colorScheme.outline
                     )
                 }
+                //begin en eind daggtum dat het open staat voor afhaal moment
                 Text(stringResource(R.string.pickup_window, bag.pickupStart.hm(), bag.pickupEnd.hm()), style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    //hoeveel er nog van deze pakketne over zijn, ook de afstand van je locatie tot winkel wordt getppnt
                     Text(stringResource(R.string.left_count, bag.quantityLeft), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     item.distanceKm?.let {
                         Text(stringResource(R.string.distance_km, it), style = MaterialTheme.typography.bodySmall)
@@ -238,31 +245,46 @@ private fun BagCard(item: BagItem, onClick: () -> Unit) {
     }
 }
 
-// ---------------- Kaart ----------------
+// map Kaart
 
+//dit gaa ttonen hoeveel pakket er beschikbaar zijn bij de loacties enz,
+//dit zal dezelfde hpomeviewmodel gebruioken als de discovery screen, met ui screen
 @Composable
 fun MapScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: () -> Unit) {
     val s by vm.uiState.collectAsStateWithLifecycle()
+  //houd bij welke winkel de gebruiker heeft geklikt
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
+   //beschikbaar pakketen wordt als pin gedaan bij het kaart,
+    // elke winkel kan maar 1 pin hebben dus niet per pakket dat een plek heb ,
+    // maar als een plek pakketen aanbied
     val pins = s.items.distinctBy { it.bag.storeId }.map {
         MapPin(it.bag.storeId, it.bag.location.latitude, it.bag.location.longitude, it.bag.storeName)
     }
+    //alleen pakketne van de winkel dat d egebruiker selecteert, allene dez epakketen worden geselcteerd
     val selectedBags = s.items.filter { it.bag.storeId == selected }
 
     Column(Modifier.fillMaxSize()) {
+        //locatieprompt eers boveaan in het kolom, zo kan d egebruoiker altijd zijn lcoatie aanapssen ofso als die wilt
         LocationPrompt(s, vm, onPickMap)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             OsmMap(Modifier.fillMaxSize(), center = s.location ?: DEFAULT_CENTER, pins = pins, me = s.location, onPinClick = { selected = it })
+            //de kaart pakt alle schermruimte , osm toont de kaart met d ehudiige locatie als fucos, met d epins van alle winkels zo kan je zien welke winkels in je buurt ene pakket hebben
+            //als je dan op een van die winkels pin klik wordt die winkel dan geselcteerd
             if (s.loading || s.locating) CircularProgressIndicator(Modifier.align(Alignment.TopCenter).padding(16.dp))
+            //gwn loading tonen
             if (selectedBags.isNotEmpty()) {
                 Card(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp)) {
+                   //info tonen over d eiwnkel als die paakket heeft
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                       //winkelnaam tonen,, eerste pakket van de winkel wordt eerst getoont, fifo systeem
+                        //want selectedbags is voor dezelfde winkel
                         Text(selectedBags.first().bag.storeName, style = MaterialTheme.typography.titleMedium)
                         selectedBags.forEach { item ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(item.bag.title, Modifier.weight(1f))
                                 Button(onClick = { onOpenBag(item.bag.id) }) { Text(stringResource(R.string.view)) }
-                            }
+                            }//pakketen van winkel worden uiteindelijk getoont, knop per pakket enz als je op d eknop klik
+                            //worden de gegevns van dat pakket dan getoont
                         }
                     }
                 }
