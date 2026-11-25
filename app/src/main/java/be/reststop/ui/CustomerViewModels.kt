@@ -106,6 +106,7 @@ data class DetailUiState(
 
 class DetailViewModel(private val c: AppContainer, handle: SavedStateHandle) : ViewModel() {
     private val bagId: String = checkNotNull(handle["bagId"])
+    private val uid: String = c.auth.currentUser?.uid.orEmpty()
     private val _ui = MutableStateFlow(DetailUiState())
     val ui: StateFlow<DetailUiState> = _ui.asStateFlow()
     private var loadingStore = false
@@ -124,9 +125,11 @@ class DetailViewModel(private val c: AppContainer, handle: SavedStateHandle) : V
                     if (bag != null && _ui.value.store == null) loadStore(bag.storeId)
                 }
         }
-        viewModelScope.launch {
-            c.room.favoriteDao().all().collect { list ->
-                _ui.update { it.copy(favIds = list.map { f -> f.storeId }.toSet()) }
+        if (uid.isNotBlank()) {
+            viewModelScope.launch {
+                c.room.favoriteDao().allOfCustomer(uid).collect { list ->
+                    _ui.update { it.copy(favIds = list.map { f -> f.storeId }.toSet()) }
+                }
             }
         }
     }
@@ -155,12 +158,13 @@ class DetailViewModel(private val c: AppContainer, handle: SavedStateHandle) : V
     fun toggleFavorite() {
         val st = _ui.value
         val bag = st.bag ?: return
+        if (uid.isBlank()) return
         viewModelScope.launch {
-            if (st.isFavorite) c.room.favoriteDao().delete(bag.storeId)
+            if (st.isFavorite) c.room.favoriteDao().delete(uid, bag.storeId)
             else c.room.favoriteDao().upsert(
                 FavoriteStore(
-                    bag.storeId, bag.storeName,
-                    st.store?.let { "${it.address}, ${it.postcode} ${it.city}" } ?: "",
+                    uid, bag.storeId, bag.storeName,
+                    st.store?.let { "${it.address}, ${it.postcode} ${it.city}".trim(',', ' ') } ?: "",
                     System.currentTimeMillis()
                 )
             )
@@ -218,10 +222,80 @@ class OrdersViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 class FavoritesViewModel(private val c: AppContainer) : ViewModel() {
-    val favorites: StateFlow<List<FavoriteStore>> = c.room.favoriteDao().all()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val uid: String = c.auth.currentUser?.uid.orEmpty()
+    val favorites: StateFlow<List<FavoriteStore>> =
+        if (uid.isNotBlank()) {
+            c.room.favoriteDao().allOfCustomer(uid)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        } else {
+            MutableStateFlow(emptyList())
+        }
 
     fun remove(storeId: String) {
-        viewModelScope.launch { c.room.favoriteDao().delete(storeId) }
+        if (uid.isBlank()) return
+        viewModelScope.launch { c.room.favoriteDao().delete(uid, storeId) }
+    }
+}
+
+data class StoreDetailUiState(
+    val loading: Boolean = true,
+    val store: Store? = null,
+    val bags: List<Bag> = emptyList(),
+    val favIds: Set<String> = emptySet(),
+    @StringRes val error: Int? = null
+) {
+    val isFavorite: Boolean get() = store != null && store.ownerId in favIds
+}
+
+class StoreDetailViewModel(private val c: AppContainer, handle: SavedStateHandle) : ViewModel() {
+    val storeId: String = checkNotNull(handle["storeId"])
+    private val uid: String = c.auth.currentUser?.uid.orEmpty()
+    private val _ui = MutableStateFlow(StoreDetailUiState())
+    val ui: StateFlow<StoreDetailUiState> = _ui.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            try {
+                val s = c.data.store(storeId)
+                _ui.update { it.copy(store = s, loading = false) }
+            } catch (e: Exception) {
+                _ui.update { it.copy(loading = false, error = e.toMessageRes()) }
+            }
+        }
+        viewModelScope.launch {
+            c.data.bagsOfStore(storeId)
+                .catch { e -> _ui.update { it.copy(error = e.toMessageRes()) } }
+                .collect { list ->
+                    val now = System.currentTimeMillis()
+                    val available = list.filter { it.active && it.quantityLeft > 0 && it.pickupEnd.toDate().time > now }
+                    _ui.update { it.copy(bags = available) }
+                }
+        }
+        if (uid.isNotBlank()) {
+            viewModelScope.launch {
+                c.room.favoriteDao().allOfCustomer(uid).collect { list ->
+                    _ui.update { it.copy(favIds = list.map { f -> f.storeId }.toSet()) }
+                }
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val st = _ui.value
+        val store = st.store ?: return
+        if (uid.isBlank()) return
+        viewModelScope.launch {
+            if (st.isFavorite) {
+                c.room.favoriteDao().delete(uid, store.ownerId)
+            } else {
+                c.room.favoriteDao().upsert(
+                    FavoriteStore(
+                        uid, store.ownerId, store.name,
+                        "${store.address}, ${store.postcode} ${store.city}".trim(',', ' '),
+                        System.currentTimeMillis()
+                    )
+                )
+            }
+        }
     }
 }

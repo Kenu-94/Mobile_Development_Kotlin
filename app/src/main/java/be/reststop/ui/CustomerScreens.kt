@@ -1,6 +1,7 @@
 package be.reststop.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -40,75 +40,43 @@ import be.reststop.*
 import be.reststop.R
 import be.reststop.data.CachedReservation
 import be.reststop.data.FavoriteStore
-import java.util.Locale
-// ui bestan voor de hele customer gedeelte en schermen
-//userinterface, navigatie, ontdekkingspagina, kaart, pakketgeg
-//bestellingen en favos
-//jetpack compose voor de schermen bouwen en connecten met de viewmodels waar de logica is gemaakt
 
-
-//data klass voor de verschillende tab van de klanten
-//elke tab is een andere route voor navigatie
-//een label verwijst naar een tekst rescource
-//de icon gaan we tonen
 private data class NavTab(val route: String, @StringRes val label: Int, val icon: ImageVector)
 
-//hiermee kan je van een scherm naar andere scherm gaan
-//door die popupto dat het stapel terug naar startscherm gaat
-//launchsingletop= voorkoomt dat dezelfde table meerdere keren komt in het stack
-//restorestate=een oude bewaarde state terug hersteld wordt wnr je terug gaat
 fun NavController.goTab(route: String) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true
     restoreState = true
 }
 
-//hoofdcomposable functie voor de klanten
-//bovenbalk, onderbalk, navigatie, gebruikersinterface van klanten is hier
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerApp(onLogout: () -> Unit) {
     val c = LocalContext.current.container
-    //appcontainer wordt opgehaald van de context, daar zitten de repositroty, db enz
     val uid = c.auth.currentUser?.uid.orEmpty()
-    //uid van ingelogd gebruiker wordt opgehaald
-    // Per gebruiker een eigen ViewModel (sleutel = uid), zodat er na uitloggen geen oude data blijft hangen.
     val home: HomeViewModel = viewModel(key = "home-$uid", factory = vmFactory { HomeViewModel(c) })
-    //viewmodel gemaakt/opgrhaald, homeviewmodel om de pakketen te bekijekn en opzoeken dus homepage
     val orders: OrdersViewModel = viewModel(key = "orders-$uid", factory = vmFactory { OrdersViewModel(c) })
-    //ordersviewmodel om je bestelling te bekijken
-    //vmfactory zorgt dat ze worden aangemaakt met de appcontainer
-    //elke user heeft zijn eigne viewmodel, door de uid t egebruiken is elke viewmodel uniek
     val nav = rememberNavController()
-    //die navigatiecontroller van bovenana wordt anagemaakt
     val entry by nav.currentBackStackEntryAsState()
-    // we houdne bij welke scherm we nu zitten
     val route = entry?.destination?.route
-    //naar waar we gaan, dus route van de hudige scherm
     val tabs = listOf(
         NavTab("discover", R.string.tab_discover, Icons.Default.Home),
         NavTab("map", R.string.tab_map, Icons.Default.Place),
         NavTab("orders", R.string.tab_orders, Icons.Default.ShoppingCart),
         NavTab("favorites", R.string.tab_favorites, Icons.Default.Favorite)
-    )//de 4hoofd tab in de lijst, voor elke tab wordt een route aangeduid, tekst, en de icon ervoor
+    )
     val isTab = tabs.any { it.route == route }
-    //checken als de huidige scherm een van die tabs zijn, zodat we laten
-    //kunnen bepalen als we de onderbalk, uitlogknop^enz meoten tonen of niet
 
     Scaffold(
         topBar = {
             TopAppBar(
-                //bovenbalk wordt gemaakt, met de naam, tekst wordt va de stringrescource gepakt
                 title = { Text(stringResource(R.string.app_name)) },
                 navigationIcon = {
-                    //back knop getoont als de klant niet in die hoofd tab zit van die lijst
-                    //door die popbackstack kan de klant teurg gaan
                     if (!isTab && route != null) IconButton(onClick = { nav.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    //uitlogknop getoont bij de hoofdtab
                     if (isTab) IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, stringResource(R.string.logout))
                     }
@@ -116,41 +84,51 @@ fun CustomerApp(onLogout: () -> Unit) {
             )
         },
         bottomBar = {
-            //onderbalk, alleen als de gebruiker bij de hoofd tab is
             if (isTab) NavigationBar {
                 tabs.forEach { t ->
                     NavigationBarItem(
                         selected = route == t.route, onClick = { nav.goTab(t.route) },
                         icon = { Icon(t.icon, null) }, label = { Text(stringResource(t.label)) }
                     )
-                }//elke tab van die erder lijst overlope,
-                // voor elek tab wordt er een navigatie item gemaakt met een icon
-                //huidige tab is geselecteerd , en als je op een andere tab klik
-                //wordt goTab uitgevoerd
+                }
             }
         }
     ) { pad ->
-        //de scaffold wordt ni ingevuld, nahost beheert wat op het shcemr getootn wordt
-        //app begint met het scherm discover (pakketen opzoeken enz)
         NavHost(nav, startDestination = "discover", modifier = Modifier.padding(pad)) {
             composable("discover") {
-                DiscoverScreen(home, onOpenBag = { nav.navigate("detail/$it") }, onPickMap = { nav.navigate("pick") })
-            }//wnr je bij de route discover ben word tdit getoont,discoverscreen,
-            // homeviewmodel wordt gebruikt zodat de shcerm de gegevns bevat
-            //als een pakket geklitk wordt, gaat de app anvigeren naar de detail scherm van dat pakket
-            //via die onPickMap kan d eklant naar de scherm gaan bij de loactie die hij op de kaart kiest
-            composable("map") {//zelfde
-                MapScreen(home, onOpenBag = { nav.navigate("detail/$it") }, onPickMap = { nav.navigate("pick") })
+                DiscoverScreen(
+                    home,
+                    onOpenBag = { nav.navigate("detail/$it") },
+                    onOpenStore = { nav.navigate("storeDetail/$it") },
+                    onPickMap = { nav.navigate("pick") }
+                )
             }
-            composable("orders") { OrdersScreen(orders) }//toont order screen
-            composable("favorites") { FavoritesScreen() }//toont favo screen
-            composable("detail/{bagId}") { DetailScreen(onGoToOrders = { nav.popBackStack(); nav.goTab("orders") }) }
-            //dit is die detailscreen van een pakket
+            composable("map") {
+                MapScreen(
+                    home,
+                    onOpenBag = { nav.navigate("detail/$it") },
+                    onOpenStore = { nav.navigate("storeDetail/$it") },
+                    onPickMap = { nav.navigate("pick") }
+                )
+            }
+            composable("orders") {
+                OrdersScreen(orders, onOpenStore = { nav.navigate("storeDetail/$it") })
+            }
+            composable("favorites") {
+                FavoritesScreen(onOpenStore = { nav.navigate("storeDetail/$it") })
+            }
+            composable("detail/{bagId}") {
+                DetailScreen(
+                    onGoToOrders = { nav.popBackStack(); nav.goTab("orders") },
+                    onOpenStore = { nav.navigate("storeDetail/$it") }
+                )
+            }
+            composable("storeDetail/{storeId}") {
+                StoreDetailScreen(onOpenBag = { nav.navigate("detail/$it") })
+            }
             composable("pick") {
-                //de scherm wordt geopend bij de lcoatie die ze keist,
-                // huidige locatie is gegeven als beginpunt van de kaart
-                //als de klant een neiwe locatie kiest wordn deze coordinaten opgeslagne bij home.setLocation()
-                PickLocationScreen(initial = home.uiState.value.location) { lat, lon ->
+                val homeState by home.uiState.collectAsStateWithLifecycle()
+                PickLocationScreen(initial = homeState.location) { lat, lon ->
                     home.setLocation(lat, lon)
                     nav.popBackStack()
                 }
@@ -159,71 +137,55 @@ fun CustomerApp(onLogout: () -> Unit) {
     }
 }
 
-///Ontdekken
+// ---------------- Ontdekken ----------------
 
-//pagina om pakketne t eontdekken, door klanten
-//heeft homeviewmodel maar 2 functies , pakket openene en naar locatie keuze gaan
-//is volledig in state, en bij elke aanpassing gaat de scherm zelf refreshen
 @Composable
-fun DiscoverScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: () -> Unit) {
+fun DiscoverScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onOpenStore: (String) -> Unit, onPickMap: () -> Unit) {
     val s by vm.uiState.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize()) {
-        //alles wordt in ene kolom gedaan
         Text(
-            //bestaat het stad niet? locatie onbekend tekst
             s.city?.let { stringResource(R.string.near_city, it) } ?: stringResource(R.string.near_unknown),
             style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(16.dp)
         )
         LocationPrompt(s, vm, onPickMap)
-        //locatieprompt getoont,dit zegt tgeen de gebruiker wat zijn locatie is en kan die aanapssen op kaart
 
-      //afstand filters
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-           //filterchip, kan dan alle afstandne bekijken, als maxLm null is is dit geselecteerd
-            //wordt uitgeschakeld bij een klik
             FilterChip(s.maxKm == null, { vm.setMaxKm(null) }, { Text(stringResource(R.string.all_distances)) })
             listOf(1, 5, 10).forEach { km ->
-                //voor elke afstand is er een chip
                 FilterChip(s.maxKm == km, { vm.setMaxKm(km) }, { Text(stringResource(R.string.km_value, km)) })
             }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(s.category == null, { vm.setCategory(null) }, { Text(stringResource(R.string.all_categories)) })
             CATEGORIES.forEach { cat ->
-                //alle categorieen, wnr de gebruikt klikt gaat het ef
                 FilterChip(s.category == cat, { vm.setCategory(cat) }, { Text(stringResource(categoryRes(cat))) })
             }
         }
-        //bij fouten wordt er een foutmelding getoont, haalt van de string rescourc en een kleur
         s.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         when {
-            //controle als pakket nog geladen wordt of als locatie nog bepaalt wordt
-
             s.loading || s.locating -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             s.items.isEmpty() -> Text(stringResource(R.string.no_bags), modifier = Modifier.padding(16.dp))
             else -> LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(s.items, key = { it.bag.id }) { BagCard(it) { onOpenBag(it.bag.id) } }
+                items(s.items, key = { it.bag.id }) { BagCard(it, onOpenStore = onOpenStore) { onOpenBag(it.bag.id) } }
             }
-            //gene pakketne beschikbaar?: melding tonen
-            //wel pakketn? :wordt getoont in een scrolbar elijst, via bagcard
         }
     }
 }
-//maakt een kaart voor elke pakket,die krijgt een bagitem dat bevat de pakket gegevens
-// en afstand
+
 @Composable
-private fun BagCard(item: BagItem, onClick: () -> Unit) {
+private fun BagCard(item: BagItem, onOpenStore: ((String) -> Unit)? = null, onClick: () -> Unit) {
     val bag = item.bag
-    //klik event
     Card(onClick = onClick, Modifier.fillMaxWidth()) {
-        //inhoud van d ekaart wordt als row gedaan, links pakketfoto
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Base64Image(bag.photoBase64, Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)), sample = 4)
-           //en rechtd wordt de gegevens van die pakket gedaan, oner elkaar, winkel naam, titel
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(bag.storeName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    bag.storeName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = if (onOpenStore != null && bag.storeId.isNotBlank()) Modifier.clickable { onOpenStore(bag.storeId) } else Modifier
+                )
                 Text(bag.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-              //prijs en og waarde wort ook getoont
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.price_eur, bag.price), fontWeight = FontWeight.Bold)
                     Text(
@@ -231,10 +193,8 @@ private fun BagCard(item: BagItem, onClick: () -> Unit) {
                         textDecoration = TextDecoration.LineThrough, color = MaterialTheme.colorScheme.outline
                     )
                 }
-                //begin en eind daggtum dat het open staat voor afhaal moment
                 Text(stringResource(R.string.pickup_window, bag.pickupStart.hm(), bag.pickupEnd.hm()), style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    //hoeveel er nog van deze pakketne over zijn, ook de afstand van je locatie tot winkel wordt getppnt
                     Text(stringResource(R.string.left_count, bag.quantityLeft), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                     item.distanceKm?.let {
                         Text(stringResource(R.string.distance_km, it), style = MaterialTheme.typography.bodySmall)
@@ -245,46 +205,37 @@ private fun BagCard(item: BagItem, onClick: () -> Unit) {
     }
 }
 
-// map Kaart
+// ---------------- Kaart ----------------
 
-//dit gaa ttonen hoeveel pakket er beschikbaar zijn bij de loacties enz,
-//dit zal dezelfde hpomeviewmodel gebruioken als de discovery screen, met ui screen
 @Composable
-fun MapScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onPickMap: () -> Unit) {
+fun MapScreen(vm: HomeViewModel, onOpenBag: (String) -> Unit, onOpenStore: (String) -> Unit, onPickMap: () -> Unit) {
     val s by vm.uiState.collectAsStateWithLifecycle()
-  //houd bij welke winkel de gebruiker heeft geklikt
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
-   //beschikbaar pakketen wordt als pin gedaan bij het kaart,
-    // elke winkel kan maar 1 pin hebben dus niet per pakket dat een plek heb ,
-    // maar als een plek pakketen aanbied
     val pins = s.items.distinctBy { it.bag.storeId }.map {
         MapPin(it.bag.storeId, it.bag.location.latitude, it.bag.location.longitude, it.bag.storeName)
     }
-    //alleen pakketne van de winkel dat d egebruiker selecteert, allene dez epakketen worden geselcteerd
     val selectedBags = s.items.filter { it.bag.storeId == selected }
 
     Column(Modifier.fillMaxSize()) {
-        //locatieprompt eers boveaan in het kolom, zo kan d egebruoiker altijd zijn lcoatie aanapssen ofso als die wilt
         LocationPrompt(s, vm, onPickMap)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             OsmMap(Modifier.fillMaxSize(), center = s.location ?: DEFAULT_CENTER, pins = pins, me = s.location, onPinClick = { selected = it })
-            //de kaart pakt alle schermruimte , osm toont de kaart met d ehudiige locatie als fucos, met d epins van alle winkels zo kan je zien welke winkels in je buurt ene pakket hebben
-            //als je dan op een van die winkels pin klik wordt die winkel dan geselcteerd
             if (s.loading || s.locating) CircularProgressIndicator(Modifier.align(Alignment.TopCenter).padding(16.dp))
-            //gwn loading tonen
             if (selectedBags.isNotEmpty()) {
+                val storeId = selectedBags.first().bag.storeId
                 Card(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp)) {
-                   //info tonen over d eiwnkel als die paakket heeft
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                       //winkelnaam tonen,, eerste pakket van de winkel wordt eerst getoont, fifo systeem
-                        //want selectedbags is voor dezelfde winkel
-                        Text(selectedBags.first().bag.storeName, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            selectedBags.first().bag.storeName,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = if (storeId.isNotBlank()) Modifier.clickable { onOpenStore(storeId) } else Modifier
+                        )
                         selectedBags.forEach { item ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(item.bag.title, Modifier.weight(1f))
                                 Button(onClick = { onOpenBag(item.bag.id) }) { Text(stringResource(R.string.view)) }
-                            }//pakketen van winkel worden uiteindelijk getoont, knop per pakket enz als je op d eknop klik
-                            //worden de gegevns van dat pakket dan getoont
+                            }
                         }
                     }
                 }
@@ -311,7 +262,7 @@ fun PickLocationScreen(initial: LatLon?, onPicked: (Double, Double) -> Unit) {
 // ---------------- Detail ----------------
 
 @Composable
-fun DetailScreen(onGoToOrders: () -> Unit) {
+fun DetailScreen(onGoToOrders: () -> Unit, onOpenStore: (String) -> Unit) {
     val c = LocalContext.current.container
     val vm: DetailViewModel = viewModel(factory = vmFactory { DetailViewModel(c, createSavedStateHandle()) })
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -346,7 +297,12 @@ fun DetailScreen(onGoToOrders: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(bag.title, style = MaterialTheme.typography.headlineSmall)
-                    Text(bag.storeName, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        bag.storeName,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = if (bag.storeId.isNotBlank()) Modifier.clickable { onOpenStore(bag.storeId) } else Modifier
+                    )
                 }
                 IconButton(onClick = vm::toggleFavorite) {
                     Icon(
@@ -394,10 +350,90 @@ fun DetailScreen(onGoToOrders: () -> Unit) {
     }
 }
 
+// ---------------- Winkel Detail ----------------
+
+@Composable
+fun StoreDetailScreen(onOpenBag: (String) -> Unit) {
+    val c = LocalContext.current.container
+    val vm: StoreDetailViewModel = viewModel(factory = vmFactory { StoreDetailViewModel(c, createSavedStateHandle()) })
+    val ui by vm.ui.collectAsStateWithLifecycle()
+    val store = ui.store
+
+    if (ui.loading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    if (store == null) {
+        Text(stringResource(ui.error ?: R.string.store_not_found), Modifier.padding(16.dp))
+        return
+    }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(store.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(categoryRes(store.category)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = vm::toggleFavorite) {
+                    Icon(
+                        if (ui.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        stringResource(R.string.favorite), tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+
+            Text("${store.address}, ${store.postcode} ${store.city}".trim(',', ' '), style = MaterialTheme.typography.bodyLarge)
+
+            OsmMap(
+                Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(12.dp)),
+                center = LatLon(store.location.latitude, store.location.longitude), zoom = 16.0,
+                pins = listOf(MapPin(store.ownerId, store.location.latitude, store.location.longitude, store.name)),
+                interactive = false
+            )
+
+            if (store.email.isNotBlank() || !store.phone.isNullOrBlank()) {
+                HorizontalDivider()
+                Text(stringResource(R.string.store_contact), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                if (store.email.isNotBlank()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Email, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Text(store.email, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                if (!store.phone.isNullOrBlank()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Text(store.phone, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            HorizontalDivider()
+
+            Text(stringResource(R.string.available_bags), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+
+            if (ui.bags.isEmpty()) {
+                Text(stringResource(R.string.no_store_bags), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ui.bags.forEach { bag ->
+                        BagCard(BagItem(bag, null)) { onOpenBag(bag.id) }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ---------------- Bestellingen ----------------
 
 @Composable
-fun OrdersScreen(vm: OrdersViewModel) {
+fun OrdersScreen(vm: OrdersViewModel, onOpenStore: (String) -> Unit) {
     val orders by vm.orders.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
     val list = orders
@@ -410,9 +446,9 @@ fun OrdersScreen(vm: OrdersViewModel) {
                 val (active, past) = list.partition { it.status == "reserved" }
                 LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (active.isNotEmpty()) item { Text(stringResource(R.string.active_orders), style = MaterialTheme.typography.titleMedium) }
-                    items(active, key = { it.id }) { OrderCard(it, onCancel = { vm.cancel(it.id) }) }
+                    items(active, key = { it.id }) { OrderCard(it, onOpenStore = onOpenStore, onCancel = { vm.cancel(it.id) }) }
                     if (past.isNotEmpty()) item { Text(stringResource(R.string.past_orders), style = MaterialTheme.typography.titleMedium) }
-                    items(past, key = { it.id }) { OrderCard(it, onCancel = null) }
+                    items(past, key = { it.id }) { OrderCard(it, onOpenStore = onOpenStore, onCancel = null) }
                 }
             }
         }
@@ -420,18 +456,24 @@ fun OrdersScreen(vm: OrdersViewModel) {
 }
 
 @Composable
-private fun OrderCard(order: CachedReservation, onCancel: (() -> Unit)?) {
-    val canCancel = onCancel != null && order.status == "reserved" && order.pickupStart > System.currentTimeMillis()
+private fun OrderCard(order: CachedReservation, onOpenStore: (String) -> Unit, onCancel: (() -> Unit)?) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(order.storeName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(
+                order.storeName,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = if (order.storeId.isNotBlank()) Modifier.clickable { onOpenStore(order.storeId) } else Modifier
+            )
             Text("${order.quantity} × ${order.bagTitle}", style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.pickup_window, order.pickupStart.hm(), order.pickupEnd.hm()))
             Text(stringResource(statusRes(order.status)), color = MaterialTheme.colorScheme.secondary)
             if (order.status == "reserved") {
                 Text(stringResource(R.string.pickup_code_label, order.pickupCode), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
-            if (canCancel) OutlinedButton(onClick = onCancel!!) { Text(stringResource(R.string.cancel_order)) }
+            if (onCancel != null && order.status == "reserved" && order.pickupStart > System.currentTimeMillis()) {
+                OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.cancel_order)) }
+            }
         }
     }
 }
@@ -439,22 +481,23 @@ private fun OrderCard(order: CachedReservation, onCancel: (() -> Unit)?) {
 // ---------------- Favorieten ----------------
 
 @Composable
-fun FavoritesScreen() {
+fun FavoritesScreen(onOpenStore: (String) -> Unit) {
     val c = LocalContext.current.container
-    val vm: FavoritesViewModel = viewModel(factory = vmFactory { FavoritesViewModel(c) })
+    val uid = c.auth.currentUser?.uid.orEmpty()
+    val vm: FavoritesViewModel = viewModel(key = "favs-$uid", factory = vmFactory { FavoritesViewModel(c) })
     val favorites by vm.favorites.collectAsStateWithLifecycle()
     if (favorites.isEmpty()) {
         Text(stringResource(R.string.no_favorites), Modifier.padding(16.dp))
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(favorites, key = { it.storeId }) { fav -> FavoriteRow(fav) { vm.remove(fav.storeId) } }
+            items(favorites, key = { it.storeId }) { fav -> FavoriteRow(fav, onOpenStore = onOpenStore) { vm.remove(fav.storeId) } }
         }
     }
 }
 
 @Composable
-private fun FavoriteRow(fav: FavoriteStore, onRemove: () -> Unit) {
-    Card(Modifier.fillMaxWidth()) {
+private fun FavoriteRow(fav: FavoriteStore, onOpenStore: (String) -> Unit, onRemove: () -> Unit) {
+    Card(onClick = { if (fav.storeId.isNotBlank()) onOpenStore(fav.storeId) }, Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(fav.name, style = MaterialTheme.typography.titleMedium)

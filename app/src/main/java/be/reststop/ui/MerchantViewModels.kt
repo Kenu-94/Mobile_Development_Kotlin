@@ -22,6 +22,8 @@ data class StoreUiState(
     val street: String = "",
     val postcode: String = "",
     val city: String = "",
+    val email: String = "",
+    val phone: String = "",
     val lat: Double? = null,
     val lon: Double? = null,
     val geocoding: Boolean = false,
@@ -32,6 +34,7 @@ data class StoreUiState(
 
 class StoreViewModel(private val c: AppContainer) : ViewModel() {
     private val uid = c.auth.currentUser?.uid.orEmpty()
+    private val loginEmail = c.auth.currentUser?.email.orEmpty()
     private val _ui = MutableStateFlow(StoreUiState())
     val ui: StateFlow<StoreUiState> = _ui.asStateFlow()
 
@@ -40,10 +43,12 @@ class StoreViewModel(private val c: AppContainer) : ViewModel() {
             try {
                 val s = c.data.store(uid)
                 _ui.update {
-                    if (s == null) it.copy(loading = false)
+                    if (s == null) it.copy(loading = false, email = loginEmail)
                     else it.copy(
                         loading = false, name = s.name, category = s.category, street = s.address,
                         postcode = s.postcode, city = s.city,
+                        email = if (s.email.isNotBlank()) s.email else loginEmail,
+                        phone = s.phone.orEmpty(),
                         lat = s.location.latitude, lon = s.location.longitude
                     )
                 }
@@ -58,6 +63,8 @@ class StoreViewModel(private val c: AppContainer) : ViewModel() {
     fun onStreet(v: String) = _ui.update { it.copy(street = v, saved = false) }
     fun onPostcode(v: String) = _ui.update { it.copy(postcode = v, saved = false) }
     fun onCity(v: String) = _ui.update { it.copy(city = v, saved = false) }
+    fun onEmail(v: String) = _ui.update { it.copy(email = v, saved = false) }
+    fun onPhone(v: String) = _ui.update { it.copy(phone = v, saved = false) }
 
     /** Pin gezet: adres automatisch invullen via reverse geocoding, zoom 18 (H2). */
     fun onPin(lat: Double, lon: Double) {
@@ -87,7 +94,17 @@ class StoreViewModel(private val c: AppContainer) : ViewModel() {
             _ui.update { it.copy(saving = true, error = null) }
             try {
                 c.data.saveStore(
-                    Store(uid, s.name.trim(), s.category, GeoPoint(s.lat!!, s.lon!!), s.street.trim(), s.postcode.trim(), s.city.trim())
+                    Store(
+                        ownerId = uid,
+                        name = s.name.trim(),
+                        category = s.category,
+                        location = GeoPoint(s.lat!!, s.lon!!),
+                        address = s.street.trim(),
+                        postcode = s.postcode.trim(),
+                        city = s.city.trim(),
+                        email = s.email.trim(),
+                        phone = s.phone.trim().ifBlank { null }
+                    )
                 )
                 _ui.update { it.copy(saved = true) }
             } catch (e: Exception) {

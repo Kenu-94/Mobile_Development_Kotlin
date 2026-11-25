@@ -104,6 +104,13 @@
     <string name="tab_my_bags">Mijn pakketten</string>
     <string name="tab_my_store">Mijn winkel</string>
     <string name="store_name">Winkelnaam</string>
+    <string name="store_email">E-mailadres winkel</string>
+    <string name="store_phone">Telefoonnummer (optioneel)</string>
+    <string name="store_contact">Contactgegevens</string>
+    <string name="available_bags">Beschikbare pakketten</string>
+    <string name="no_store_bags">Deze winkel heeft momenteel geen beschikbare pakketten.</string>
+    <string name="store_not_found">Deze winkel werd niet gevonden.</string>
+    <string name="view_store">Bekijk winkel</string>
     <string name="store_pick_hint">Tik op de kaart om de locatie van je winkel te kiezen. Het adres wordt automatisch ingevuld.</string>
     <string name="street">Straat en huisnummer</string>
     <string name="postcode">Postcode</string>

@@ -14,7 +14,9 @@ data class Store(
     val location: GeoPoint = GeoPoint(0.0, 0.0),
     val address: String = "",
     val postcode: String = "",
-    val city: String = ""
+    val city: String = "",
+    val email: String = "",
+    val phone: String? = null
 )
 
 // Firestore: bags/{bagId}. storeName, category en location zijn bewust gekopieerd.
@@ -54,9 +56,10 @@ data class Reservation(
 )
 //omzetten om ze te kunnen opslana in firestore of room, ze worden een map
 
-fun Store.toMap(): Map<String, Any> = mapOf(
+fun Store.toMap(): Map<String, Any?> = mapOf(
     "ownerId" to ownerId, "name" to name, "category" to category, "location" to location,
-    "address" to address, "postcode" to postcode, "city" to city
+    "address" to address, "postcode" to postcode, "city" to city,
+    "email" to email, "phone" to phone
 )
 
 fun Bag.toMap(): Map<String, Any> = mapOf(
@@ -68,7 +71,7 @@ fun Bag.toMap(): Map<String, Any> = mapOf(
 
 //reservatie omzetten naar cached want zo een reservatie van firestore opgeslagen wordne bij room db, zodat het ook offline kan bekeken wordne die reservaties
 fun Reservation.toCached() = CachedReservation(
-    id = id, bagTitle = bagTitle, storeName = storeName, pickupCode = pickupCode,
+    id = id, storeId = storeId, bagTitle = bagTitle, storeName = storeName, pickupCode = pickupCode,
     pickupStart = pickupStart.toDate().time, pickupEnd = pickupEnd.toDate().time,
     status = status, quantity = quantity, createdAt = createdAt.toDate().time
 )

@@ -6,14 +6,21 @@ import kotlinx.coroutines.flow.Flow
 
 //gwn alle lokale dingen en room db
 
-//favo winkel entity
-@Entity
-data class FavoriteStore(@PrimaryKey val storeId: String, val name: String, val address: String, val addedAt: Long)
+//favo winkel entity per gebruiker
+@Entity(primaryKeys = ["customerId", "storeId"])
+data class FavoriteStore(
+    val customerId: String,
+    val storeId: String,
+    val name: String,
+    val address: String,
+    val addedAt: Long
+)
 
 //reservaties lokaal bijhouden, geen wifi nodig , entity
 @Entity
 data class CachedReservation(
     @PrimaryKey val id: String,
+    val storeId: String = "",
     val bagTitle: String,
     val storeName: String,
     val pickupCode: String,
@@ -36,17 +43,17 @@ data class CachedAddress(
 )
 
 @Dao
-//gegevsn van favo winke aanpassen
+//gegevsn van favo winke aanpassen per gebruiker
 interface FavoriteDao {
-    //favo ophalen
-    @Query("SELECT * FROM FavoriteStore ORDER BY addedAt DESC")
-    fun all(): Flow<List<FavoriteStore>>
+    //favo ophalen van specifieke klant
+    @Query("SELECT * FROM FavoriteStore WHERE customerId = :customerId ORDER BY addedAt DESC")
+    fun allOfCustomer(customerId: String): Flow<List<FavoriteStore>>
 //favo toevoegen/vervangen
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(favorite: FavoriteStore)
-//verwijderne van favo
-    @Query("DELETE FROM FavoriteStore WHERE storeId = :storeId")
-    suspend fun delete(storeId: String)
+//verwijderne van favo van specifieke klant
+    @Query("DELETE FROM FavoriteStore WHERE customerId = :customerId AND storeId = :storeId")
+    suspend fun delete(customerId: String, storeId: String)
 }
 
 @Dao
@@ -88,7 +95,7 @@ interface AddressDao {
 //db
 @Database(
     entities = [FavoriteStore::class, CachedReservation::class, CachedAddress::class],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -101,6 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
 //db ophalen/aanmaken
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "reststop.db")
+                .fallbackToDestructiveMigration()
                 .build().also { instance = it }
         }
     }

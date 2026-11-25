@@ -120,6 +120,16 @@ fun StoreScreen() {
             OutlinedTextField(ui.postcode, vm::onPostcode, Modifier.weight(1f), singleLine = true, label = { Text(stringResource(R.string.postcode)) })
             OutlinedTextField(ui.city, vm::onCity, Modifier.weight(2f), singleLine = true, label = { Text(stringResource(R.string.city)) })
         }
+        OutlinedTextField(
+            ui.email, vm::onEmail, Modifier.fillMaxWidth(), singleLine = true,
+            label = { Text(stringResource(R.string.store_email)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+        )
+        OutlinedTextField(
+            ui.phone, vm::onPhone, Modifier.fillMaxWidth(), singleLine = true,
+            label = { Text(stringResource(R.string.store_phone)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+        )
         ui.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         if (ui.saved) Text(stringResource(R.string.store_saved), color = MaterialTheme.colorScheme.primary)
         if (ui.saving) CircularProgressIndicator() else Button(onClick = vm::save, modifier = Modifier.fillMaxWidth()) {
