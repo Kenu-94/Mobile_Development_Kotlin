@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reststop</string>
+    <string name="tagline">Red lekker eten van de handelaars in jouw buurt</string>
+
+    <!-- Algemeen -->
+    <string name="back">Terug</string>
+    <string name="retry">Opnieuw proberen</string>
+    <string name="save">Opslaan</string>
+    <string name="cancel">Annuleren</string>
+    <string name="confirm">Bevestigen</string>
+    <string name="view">Bekijk</string>
+    <string name="category">Categorie</string>
+    <string name="price_eur">€ %1$.2f</string>
+    <string name="distance_km">%1$.1f km</string>
+    <string name="km_value">%1$d km</string>
+    <string name="pickup_window">Ophalen %1$s – %2$s</string>
+    <string name="left_count">Nog %1$d over</string>
+    <string name="sold_out">Uitverkocht</string>
+
+    <!-- Account -->
+    <string name="login">Inloggen</string>
+    <string name="register">Registreren</string>
+    <string name="logout">Uitloggen</string>
+    <string name="name">Naam</string>
+    <string name="email">E-mail</string>
+    <string name="password">Wachtwoord</string>
+    <string name="role_label">Ik ben een…</string>
+    <string name="role_customer">Klant</string>
+    <string name="role_merchant">Handelaar</string>
+    <string name="no_account">Nog geen account? Registreer</string>
+    <string name="have_account">Al een account? Log in</string>
+    <string name="forgot_password">Wachtwoord vergeten?</string>
+    <string name="reset_sent">We stuurden een mail om je wachtwoord opnieuw in te stellen.</string>
+
+    <!-- Foutmeldingen -->
+    <string name="err_generic">Er ging iets mis. Probeer het later opnieuw.</string>
+    <string name="err_network">Geen internetverbinding. Controleer je verbinding en probeer opnieuw.</string>
+    <string name="err_wrong_credentials">Verkeerd e-mailadres of wachtwoord.</string>
+    <string name="err_email_in_use">Dit e-mailadres is al in gebruik.</string>
+    <string name="err_weak_password">Het wachtwoord moet minstens 6 tekens bevatten.</string>
+    <string name="err_invalid_email">Geef een geldig e-mailadres in.</string>
+    <string name="err_required">Vul alle velden in.</string>
+    <string name="err_no_location">We konden je locatie niet bepalen. Kies een locatie op de kaart.</string>
+    <string name="err_sold_out">Helaas, dit pakket is niet meer beschikbaar in dit aantal.</string>
+    <string name="err_no_address">Voor deze plek werd geen adres gevonden. Vul het zelf in.</string>
+    <string name="err_no_pin">Zet eerst een pin op de kaart.</string>
+    <string name="err_no_store">Maak eerst je winkel aan.</string>
+    <string name="err_invalid_number">Controleer prijs en aantal: geef geldige getallen in.</string>
+    <string name="err_original_lower">De originele waarde moet minstens even hoog zijn als de prijs.</string>
+    <string name="err_window_order">Het einduur moet na het beginuur liggen.</string>
+    <string name="err_window_past">Het ophaalvenster ligt al in het verleden.</string>
+    <string name="err_photo">De foto kon niet verwerkt worden.</string>
+    <string name="err_photo_required">Voeg een foto toe.</string>
+    <string name="err_wrong_code">De ophaalcode klopt niet.</string>
+
+    <!-- Locatie -->
+    <string name="location_explain">Om pakketten in jouw buurt te tonen hebben we je locatie nodig. Je kan ook zelf een plek op de kaart kiezen.</string>
+    <string name="location_approximate">Je gaf enkel een benaderende locatie door. Afstanden zijn minder nauwkeurig.</string>
+    <string name="location_denied">Zonder toestemming kunnen we je locatie niet gebruiken. Kies een plek op de kaart of probeer opnieuw.</string>
+    <string name="location_denied_permanent">Locatie is geweigerd. Je kan dit aanpassen in de app-instellingen.</string>
+    <string name="allow_location">Locatie toestaan</string>
+    <string name="open_settings">Open instellingen</string>
+    <string name="pick_on_map">Kies op de kaart</string>
+    <string name="change_location">Locatie wijzigen</string>
+    <string name="pick_hint">Tik op de kaart om je locatie te kiezen.</string>
+    <string name="use_this_location">Gebruik deze locatie</string>
+
+    <!-- Klant -->
+    <string name="tab_discover">Ontdekken</string>
+    <string name="tab_map">Kaart</string>
+    <string name="tab_orders">Bestellingen</string>
+    <string name="tab_favorites">Favorieten</string>
+    <string name="near_city">Pakketten in de buurt van %1$s</string>
+    <string name="near_unknown">Pakketten in de buurt</string>
+    <string name="all_distances">Alle afstanden</string>
+    <string name="all_categories">Alle categorieën</string>
+    <string name="no_bags">Er zijn momenteel geen pakketten beschikbaar.</string>
+    <string name="cat_bakery">Bakker</string>
+    <string name="cat_supermarket">Supermarkt</string>
+    <string name="cat_restaurant">Restaurant</string>
+    <string name="cat_other">Andere</string>
+    <string name="bag_not_found">Dit pakket bestaat niet meer.</string>
+    <string name="favorite">Favoriet</string>
+    <string name="remove_favorite">Verwijder favoriet</string>
+    <string name="quantity">Aantal</string>
+    <string name="less">Minder</string>
+    <string name="more">Meer</string>
+    <string name="reserve">Reserveer</string>
+    <string name="reserved_title">Gereserveerd!</string>
+    <string name="pickup_code_explain">Toon deze code in de winkel wanneer je je pakket ophaalt:</string>
+    <string name="to_orders">Naar mijn bestellingen</string>
+    <string name="no_orders">Je hebt nog geen bestellingen.</string>
+    <string name="active_orders">Actief</string>
+    <string name="past_orders">Vroeger</string>
+    <string name="pickup_code_label">Ophaalcode: %1$s</string>
+    <string name="cancel_order">Reservatie annuleren</string>
+    <string name="status_reserved">Gereserveerd</string>
+    <string name="status_collected">Opgehaald</string>
+    <string name="status_cancelled">Geannuleerd</string>
+    <string name="no_favorites">Nog geen favoriete winkels. Tik op het hartje bij een pakket.</string>
+
+    <!-- Handelaar -->
+    <string name="tab_my_bags">Mijn pakketten</string>
+    <string name="tab_my_store">Mijn winkel</string>
+    <string name="store_name">Winkelnaam</string>
+    <string name="store_pick_hint">Tik op de kaart om de locatie van je winkel te kiezen. Het adres wordt automatisch ingevuld.</string>
+    <string name="street">Straat en huisnummer</string>
+    <string name="postcode">Postcode</string>
+    <string name="city">Gemeente</string>
+    <string name="store_saved">Winkel opgeslagen.</string>
+    <string name="create_store_first">Maak eerst je winkel aan voor je pakketten kan aanbieden.</string>
+    <string name="go_to_store">Naar mijn winkel</string>
+    <string name="new_bag">Nieuw pakket</string>
+    <string name="no_own_bags">Je hebt nog geen pakketten aangeboden.</string>
+    <string name="stock">Voorraad: %1$d / %2$d</string>
+    <string name="reservation_count">%1$d reservatie(s)</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="mark_collected">Opgehaald</string>
+    <string name="check_code_title">Ophaalcode controleren</string>
+    <string name="pickup_code">Ophaalcode</string>
+    <string name="bag_title">Titel</string>
+    <string name="bag_description">Beschrijving</string>
+    <string name="bag_price">Prijs (€)</string>
+    <string name="bag_original">Originele waarde (€)</string>
+    <string name="bag_quantity">Aantal pakketten</string>
+    <string name="from_time">Van %1$s</string>
+    <string name="until_time">Tot %1$s</string>
+    <string name="add_photo">Foto toevoegen</string>
+    <string name="change_photo">Andere foto kiezen</string>
+    <string name="publish_bag">Pakket aanbieden</string>
+</resources>
